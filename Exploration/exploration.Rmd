@@ -1,0 +1,46 @@
+---
+title: "Exploration"
+author: "Alun"
+date: "9 February 2016"
+output: html_document
+---
+
+```{r libraries, echo = FALSE, message=FALSE}
+require(dplyr)
+require(ggplot2)
+```
+
+```{r readinData, echo = FALSE, cache = TRUE, message=FALSE}
+source("readIn.R")
+```
+
+## Basic breakdown of destination popularity
+
+```{r}
+#
+trainUsers <- train_users_2
+trainUsers$country_destination <- as.character(trainUsers$country_destination)
+
+countryCounts <- trainUsers %>% 
+    group_by(country_destination) %>%
+    summarise(count = n()) %>%
+    arrange(desc(count))
+    
+with(countryCounts, barplot(count, names.arg = country_destination))
+```
+
+NDF (no destination found), and US are by far the largest accounting for `r signif(100 * head(countryCounts$count,2) / sum(countryCounts$count), 3)`% of the total respectively. It may therefore be important to try to accurately predict the three clusters of no destination (didn't make a booking), internal travel (US) and external travel. 
+
+# Language
+One of the more obvious predictors of external travel is the language feature. 
+
+  - Compare the country traveled to by non-english language users
+  - Compare the rate of external travel of different language groups
+  - Compare the rate of travel to countries which match that language (not including us.)
+  
+```{r}
+# Define a feature dictating if the user travelled abroad or internally or not at all.
+trainUsers$abroad <- sapply(trainUsers$country_destination, function(x) {
+    return(ifelse( x %in% c("NDF", "US"), x, "EXT"))
+})
+```

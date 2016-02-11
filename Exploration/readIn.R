@@ -1,0 +1,6 @@
+options(stringsAsFactors = FALSE)
+age_gender_bkts <- read.csv("age_gender_bkts.csv")
+countries <- read.csv("countries.csv")
+sessions <- read.csv("sessions.csv")
+test_users <- read.csv("test_users.csv")
+train_users_2 <- read.csv("train_users_2.csv")

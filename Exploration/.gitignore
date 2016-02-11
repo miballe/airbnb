@@ -1,0 +1,5 @@
+*.Rproj.user
+*.Rhistory
+*.RData
+exploration_files/*
+exploration_cache/*
