@@ -5,42 +5,107 @@ date: "9 February 2016"
 output: html_document
 ---
 
-```{r libraries, echo = FALSE, message=FALSE}
+```{r libraries, echo = FALSE, message=FALSE, warning=FALSE}
 require(dplyr)
 require(ggplot2)
+require(tidyr)
 ```
 
+I have created a script to read in all the data files as well as a script which takes 2 features and compares the rate of feature "output" grouped by feature "feature"
 ```{r readinData, echo = FALSE, cache = TRUE, message=FALSE}
 source("readIn.R")
+source("plotFeatureVsOutput.R")
 ```
 
 ## Basic breakdown of destination popularity
+Below we break down the percentage of the training set going to each outcome factor. Each bar is labelled with its percentage of the total. 
 
-```{r}
-#
-trainUsers <- train_users_2
-trainUsers$country_destination <- as.character(trainUsers$country_destination)
-
-countryCounts <- trainUsers %>% 
-    group_by(country_destination) %>%
-    summarise(count = n()) %>%
-    arrange(desc(count))
-    
-with(countryCounts, barplot(count, names.arg = country_destination))
+```{r, results='hold'}
+invisible(compare_plot(output = "country_destination"))
 ```
 
-NDF (no destination found), and US are by far the largest accounting for `r signif(100 * head(countryCounts$count,2) / sum(countryCounts$count), 3)`% of the total respectively. It may therefore be important to try to accurately predict the three clusters of no destination (didn't make a booking), internal travel (US) and external travel. 
+NDF (no destination found), and US are by far the largest. It may therefore be important to try to accurately predict the three clusters of no destination (didn't make a booking), internal travel (US) and external travel. 
+
+## Quick Look
+
+We use the plotFeatureVsOutput function to quickly graph the different proportions of internal travel and booking rates group by different features. 
+
+### Foreign speakers
+```{r foreign vs en, results = "hold"}
+# Define a feature dictating if the user travelled abroad or internally or not at all.
+index <- train_users_2$country_destination %in% c("NDF", "US")
+train_users_2$abroad <- factor("EXT", levels = c("NDF", "US", "EXT"))
+train_users_2$abroad[index] <- factor(train_users_2$country_destination[index])
+
+train_users_2$en <- factor("other", levels = c("en", "other"))
+index <- train_users_2$language %in% "en"
+train_users_2$en[index] <- train_users_2$language[index]
+
+invisible(compare_plot("en"))
+invisible(compare_plot("en", seperate = T))
+```
+
+Defining a feature for people using the english version of airbnb vs. other languages there is little difference between foreign language and the proportion of bookings made abroad but that foreign lanugage users are significantly less likely to make a booking. There is no immediately apparent mechanism for why this would be the case. Also we can clearly see how small a numerical minority foreign language users are. 
+
+### Gender
+```{r Gender, results="hold"}
+ invisible(compare_plot("gender"))
+ compare_plot("gender", seperate = TRUE)
+```
+Here we can see that although gender doesn't seem to have a significant impact, not defining a gender is very strongly correlated with not making a booking. This follows a narrative that if a user isn't serious about making a booking they are likely to not fill in the sign-up information as thoroughly. It may therefore be useful to define a feature based on how much of the sign-up information they have used. This is only relevent for people not using one of the automatic sign-up methods; facebook or google. 
+
+```{r device type, results= "hold"}
+ invisible(compare_plot("first_device_type"))
+ compare_plot("first_device_type", seperate = TRUE)
+```
+Phones appear to have a higher internal travel rate. Perhaps people using smartphones are going about a more casual use of the app rather than a carefully planned foreign holiday. 
+Desktops (PC / mac / windows) have lower NDF rates. This could be for the same reason, desktop use indicates a more serious (less casual) use of the app
+
 
 # Language
 One of the more obvious predictors of external travel is the language feature. 
 
-  - Compare the country traveled to by non-english language users
-  - Compare the rate of external travel of different language groups
-  - Compare the rate of travel to countries which match that language (not including us.)
-  
-```{r}
-# Define a feature dictating if the user travelled abroad or internally or not at all.
-trainUsers$abroad <- sapply(trainUsers$country_destination, function(x) {
-    return(ifelse( x %in% c("NDF", "US"), x, "EXT"))
-})
+  1. Do foreign speakers travel abroad at a higher rate? In contrast to the US?
+    - Do they have higher rates of bookings in contrast to NDF?
+  2. Compare the rate of external travel of different language groups
+  3. Compare the rate of travel to countries which match that language (not including us.)
+ 
+To achieve this we cluster abroad travel together and foreign speakers together. 
+```{r, message = FALSE, results='hold'}
+# Define a feature dictating foreign speech.
+languageDiff <- train_users_2 %>%
+    group_by(language, abroad) %>%
+    summarise(count = n())
+
+languageCounts <- languageDiff %>%
+    group_by(language) %>%
+    summarise(total = sum(count))
+
+languageDiff <- inner_join(languageDiff, languageCounts)
+languageDiff <- languageDiff %>% mutate(percent = count / total)
+
+groupCounts <- languageDiff %>%
+    group_by(abroad) %>%
+    summarise(average = mean(percent))
+
+languageDiff <- inner_join(languageDiff, groupCounts)
+
+ggplot(data = languageDiff, aes(x = language, y = percent, colour = abroad)) + 
+    geom_point() +
+    geom_hline(aes(yintercept = average, colour = abroad), size=.5, alpha = .5)
 ```
+
+Here we can see that while english speakers have a greater than average proportion of users traveling to the US this is due to a lower rate of NDF and not from less people travelling abroad. It is probably more informative to look at these two ratios (Booking/NDF and US/EXT) seperately. 
+
+There is a lot of variance in the data here, including some languages with 0% US and/or EXT. This can be attributed to lower numbers of users for some foreign speaking languages. 
+
+
+# TODO
+ - For foreign languages speakers who travel abroad, how likley are they to travel to somewhere of the same language as them?
+ - Define a feature for people with NA for age and gender who didn't use a signup method (facebook/google)
+ - Look at time data, the training set is over several years but the test set is only over several months. What can this tell us?
+ - Look at time data, how does day of the week booked effect things?
+ - Improve function or rewrite function so that we can process all feature groups relative difference between US_rate / NDF rate for factors in the group.
+ 
+# Comments
+Overall it seems that many of the features have some relationship with the NDF rate. Especially levels of not filling in the profile and foreign language use. However identifying strong features related to if travel is internal or external is much harder from the variables we have investigated so far. Although perhaps strangely using a smartphone appears to be correlated with internal travel.
