@@ -109,3 +109,12 @@ There is a lot of variance in the data here, including some languages with 0% US
  
 # Comments
 Overall it seems that many of the features have some relationship with the NDF rate. Especially levels of not filling in the profile and foreign language use. However identifying strong features related to if travel is internal or external is much harder from the variables we have investigated so far. Although perhaps strangely using a smartphone appears to be correlated with internal travel.
+
+```{r}
+test <- featureFactorComp()
+test$feature_value <- as.character(test$feature_value)
+ggplot(test, aes(x = reorder(feature_value, as.numeric(feature)), 
+                 y = NDF_rate_relative, colour = feature)) + 
+    geom_point() +
+    theme(axis.text.x = element_text(angle = 90))
+```

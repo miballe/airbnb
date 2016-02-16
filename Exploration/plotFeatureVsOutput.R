@@ -92,14 +92,3 @@ featureFactorComp <- function(df = train_users_2) {
     return(return_df)
 }
 
-### TODO
-# create a plot of all these levels so it is easy to see which features are most impactful.
-
-test <- featureFactorComp()
-test
-test[which.max(test$NDF_rate_relative),]
-test[which.min(test$NDF_rate_relative),]
-test[which.max(test$US_rate_relative),]
-test[which.min(test$US_rate_relative),]
-
-plot(test$feature_value, test$NDF_rate_relative)
