@@ -67,8 +67,11 @@ featureFactorComp <- function(df = train_users_2) {
     
     # Select factors variables with less than 20 factors not the output
     level_length <- sapply(df, function(x) length(levels(x)))
-    factors <- names(df)[level_length > 0 & level_length < 20]
+    factors <- names(df)[level_length > 0 & level_length < 30]
     factors <- factors[factors != output]
+    
+    # Do not compare country_destination to abroad as 1:1
+    factors <- factors[factors != "country_destination"]
     
     # Initialise return dataframe
     return_df <- data.frame(feature_value = factor(), feature = factor(),
@@ -80,15 +83,24 @@ featureFactorComp <- function(df = train_users_2) {
         Counts <- compare_plot(feature = x, df = df, output = output, 
                                seperate = T, plot = F) %>%
             group_by() %>%
-            mutate(NDF_rate_relative = NDF_rate - mean(NDF_rate), 
-                   US_rate_relative = US_rate - mean(US_rate))
+            mutate(NDF_rate_relative = NDF_rate - mean(NDF_rate, na.rm = T), 
+                   US_rate_relative = US_rate - mean(US_rate, na.rm = T))
         # Reformat names and bind to return dataframe
         Counts$feature <- names(Counts)[1]
         names(Counts)[1] <- names(return_df)[1]
+        # Rename feature factors which are already in return_df
+        Counts$feature_value <- as.character(Counts$feature_value)
+        index <- Counts$feature_value %in% as.character(return_df$feature_value)
+        while(sum(index > 0)) {
+        Counts$feature_value[index] <- paste0(Counts$feature_value[index], "_")
+        index <- Counts$feature_value %in% as.character(return_df$feature_value)
+        }
+        Counts$feature_value <- as.factor(Counts$feature_value)
+        
         return_df <<- rbind(return_df, Counts)
-            
     })
-    return_df$feature <- factor(return_df$feature)
+    return_df$feature_value <- as.factor(return_df$feature_value)
+    return_df$feature <- as.factor(return_df$feature)
     return(return_df)
 }
 

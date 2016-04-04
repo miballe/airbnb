@@ -11,7 +11,7 @@ require(ggplot2)
 require(tidyr)
 ```
 
-I have created a script to read in all the data files as well as a script which takes 2 features and compares the rate of feature "output" grouped by feature "feature"
+I have created a script to read in all the data files as well as a script which takes 2 features and compares the rate of feature "output" grouped by feature "feature". Read in depth the source file for this function in "plotFeatureVsOutput.R". 
 ```{r readinData, echo = FALSE, cache = TRUE, message=FALSE}
 source("readIn.R")
 source("plotFeatureVsOutput.R")
@@ -99,6 +99,45 @@ Here we can see that while english speakers have a greater than average proporti
 
 There is a lot of variance in the data here, including some languages with 0% US and/or EXT. This can be attributed to lower numbers of users for some foreign speaking languages. 
 
+ 
+# Summary
+
+Below we can see each categorical feature factors NDF rate compared to the average of the rest of that feature. 
+```{r full feature comparison, fig.width=900}
+Factor_summary <- featureFactorComp()
+Factor_summary$feature_value <- as.character(Factor_summary$feature_value)
+ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
+                 y = NDF_rate_relative, fill = feature)) + 
+    geom_bar(stat = 'identity') +
+    theme(axis.text.x = element_text(angle = 90)) +
+    theme_bw()
+
+ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
+                 y = US_rate_relative, fill = feature)) + 
+    geom_bar(stat = 'identity') +
+    theme(axis.text.x = element_text(angle = 90)) +
+    theme_bw()
+```
+
+Overall it seems that many of the features have some relationship with the NDF rate. Especially levels of not filling in the profile and foreign language use. However identifying strong features related to if travel is internal or external is much harder from the variables we have investigated so far. Although perhaps strangely using a smartphone appears to be correlated with internal travel.
+
+ # Comparing which users in sessions are present in training and testing data. 
+```{r}
+# List of test users 
+test_ids <- test_users$id
+train_ids <- train_users_2$id
+sessions_ids <- sessions$user_id
+"Percentage of training set in sessions data:"
+sum(train_ids %in% sessions_ids) / length(train_ids)
+"Percentage of test set in sessions data:"
+sum(test_ids %in% sessions_ids) / length(test_ids)
+```
+
+Level of completion of online form
+To do this we first need to visualise the effects of form completion in its different forms. I.e. what is the difference between not filling in a form on facebook or google vs. on their website. 
+```{r form completion}
+
+```
 
 # TODO
  - For foreign languages speakers who travel abroad, how likley are they to travel to somewhere of the same language as them?
@@ -106,15 +145,3 @@ There is a lot of variance in the data here, including some languages with 0% US
  - Look at time data, the training set is over several years but the test set is only over several months. What can this tell us?
  - Look at time data, how does day of the week booked effect things?
  - Improve function or rewrite function so that we can process all feature groups relative difference between US_rate / NDF rate for factors in the group.
- 
-# Comments
-Overall it seems that many of the features have some relationship with the NDF rate. Especially levels of not filling in the profile and foreign language use. However identifying strong features related to if travel is internal or external is much harder from the variables we have investigated so far. Although perhaps strangely using a smartphone appears to be correlated with internal travel.
-
-```{r}
-test <- featureFactorComp()
-test$feature_value <- as.character(test$feature_value)
-ggplot(test, aes(x = reorder(feature_value, as.numeric(feature)), 
-                 y = NDF_rate_relative, colour = feature)) + 
-    geom_point() +
-    theme(axis.text.x = element_text(angle = 90))
-```

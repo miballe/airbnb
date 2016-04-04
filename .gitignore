@@ -3,3 +3,6 @@
 *.RData
 exploration_files/*
 exploration_cache/*
+.Rproj.user
+MeetingAudio/
+Data/
