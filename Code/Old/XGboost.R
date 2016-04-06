@@ -50,7 +50,10 @@ xgb_1 = xgboost(data = sparse_tr,
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Evaluating model ####
-importance <- xgb.importance(sparse_tr@Dimnames[[2]], model = xgb_1, data = sparse_tr, label = tr$country_destination)
+importance <- xgb.importance(sparse_tr@Dimnames[[2]], 
+                             model = xgb_1, 
+                             data = sparse_tr, 
+                             label = tr$country_destination)
 xgb.plot.importance(importance_matrix = importance)
 
 
