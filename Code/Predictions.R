@@ -5,20 +5,19 @@ predictions <- function(model, sparse_dat, set, outcomes){
     
     # Split data into training and testing
     ii_tr <- set == "train"
-    print(str(ii_tr))
     ii_ts <- set == "test_internal"
     sparse_tr <- sparse_dat[ii_tr,]
     sparse_ts <- sparse_dat[ii_ts,]
     outcomes_tr <- outcomes[ii_tr]
-    print(str(outcomes_tr))
     outcomes_ts <- outcomes[ii_ts]
 
     # Evaluate performance on training set ####
     
     # Probability matrix
+    library(xgboost)
     pred_tr <- predict(model, sparse_tr)
     predictions_tr <- as.data.frame(matrix(pred_tr, nrow = 12))
-    rownames(predictions_tr) <- levels(outcomes_tr)
+    rownames(predictions_tr) <- levels(outcomes)
     predictions_tr <- t(predictions_tr)
     # Predict the highest probability 
     out_tr <- apply(predictions_tr, 1, function(x) colnames(predictions_tr)[which.max(x)])
