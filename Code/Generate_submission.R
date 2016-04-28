@@ -6,8 +6,8 @@ submission <- function(model, sparse_test, id, filename){
     # Probability matrix
     pred_test <- predict(model, sparse_test)
     predictions_test <- as.data.frame(matrix(pred_test, nrow = 12))
-    #ifelse(is.null(model$obsLevels),
-           levels <- c('NDF','US','other','FR','CA','GB','ES','IT','PT','NL','DE','AU')#, levels <- model$obsLevels)
+    ifelse(is.null(model$obsLevels),
+           levels <- c('NDF','US','other','FR','CA','GB','ES','IT','PT','NL','DE','AU'), levels <- model$obsLevels)
     rownames(predictions_test) <- levels
     predictions_test <- t(predictions_test)
     
