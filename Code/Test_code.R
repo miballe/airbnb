@@ -5,34 +5,40 @@
 library(xgboost)
 library(readr)
 library(stringr)
+library(Matrix)
 library(caret)
-library(car)
 library(dplyr)
+library(car)
 
-set.seed(1066)
+set.seed(1)
 
-# load data
-df_all = readRDS("../Data/users_FE.RDa")
-df_train = filter(df_all, dataset == "train")
-df_test = filter(df_all, dataset == "test")
-labels = df_train['country_destination']
-df_train = select(df_train, -c(country_destination, dataset))
-df_train = select(df_test, -c(country_destination, dataset))
+df_all <- read_rds("../Data/users_FE.RDa")
 
-# one-hot-encoding features
-ohe_feats = c('gender', 'signup_method', 'signup_flow', 'language', 'affiliate_channel', 'affiliate_provider', 'first_affiliate_tracked', 'signup_app', 'first_device_type', 'first_browser')
-dummies <- dummyVars(~ gender + signup_method + signup_flow + language + affiliate_channel + affiliate_provider + first_affiliate_tracked + signup_app + first_device_type + first_browser, data = df_all)
-df_all_ohe <- as.data.frame(predict(dummies, newdata = df_all))
-df_all_combined <- cbind(df_all[,-c(which(colnames(df_all) %in% ohe_feats))],df_all_ohe)
+# Convert all factors into characters (so NAs can be replaced)
+i <- sapply(df_all, is.factor)
+df_all[i] <- lapply(df_all[i], as.character)
+# Ensure there are no NA values (makes sparse matrix method fail)
+df_all[is.na(df_all)] <- -1
+
+# Extract dataset index and output labels from data
+labels <- df_all$country_destination
+set <- df_all$dataset
+df_all <- df_all %>% select(-country_destination, -dataset)
+
+# One - hot encoding 
+sparse_dat <- sparse.model.matrix( ~ . -1, data = df_all[,-1])
+
+# Split into training and test set
+sparse_tr <- sparse_dat[set == "train",]
+sparse_ts <- sparse_dat[set == "test",]
+#############################################################
 
 # split train and test
-X = df_all_combined[df_all_combined$id %in% df_train$id,]
-y <- recode(labels$country_destination,"'NDF'=0; 'US'=1; 'other'=2; 'FR'=3; 'CA'=4; 'GB'=5; 'ES'=6; 'IT'=7; 'PT'=8; 'NL'=9; 'DE'=10; 'AU'=11")
-X_test = df_all_combined[df_all_combined$id %in% df_test$id,]
+y <- recode(labels,"'NDF'=0; 'US'=1; 'other'=2; 'FR'=3; 'CA'=4; 'GB'=5; 'ES'=6; 'IT'=7; 'PT'=8; 'NL'=9; 'DE'=10; 'AU'=11")
 
 # train xgboost
-xgb <- xgboost(data = data.matrix(X[,-1]), 
-               label = y, 
+xgb <- xgboost(data = sparse_tr, #data.matrix(X[,-1]), 
+               label = y[set == "train"], 
                eta = 0.1,
                max_depth = 9, 
                nround=25, 
@@ -44,24 +50,5 @@ xgb <- xgboost(data = data.matrix(X[,-1]),
                nthread = 3
 )
 
-# predict values in test set
-y_pred <- predict(xgb, data.matrix(X_test[,-1]))
-
-# extract the 5 classes with highest probabilities
-predictions <- as.data.frame(matrix(y_pred, nrow=12))
-rownames(predictions) <- c('NDF','US','other','FR','CA','GB','ES','IT','PT','NL','DE','AU')
-predictions_top5 <- as.vector(apply(predictions, 2, function(x) names(sort(x)[12:8])))
-
-# create submission 
-ids <- NULL
-for (i in 1:NROW(X_test)) {
-    idx <- X_test$id[i]
-    ids <- append(ids, rep(idx,5))
-}
-submission <- NULL
-submission$id <- ids
-submission$country <- predictions_top5
-
-# generate submission file
-submission <- as.data.frame(submission)
-write.csv(submission, "submission.csv", quote=FALSE, row.names = FALSE)
+source("Generate_submission.R")
+test <- submission(xgb, sparse_ts, df_test$id, "temp")
