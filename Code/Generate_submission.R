@@ -25,5 +25,8 @@ submission <- function(model, sparse_test, id, filename){
     
     name <- paste0("./Submission_Files/", filename, ".csv")
     write.table(submission_file, name, row.names = FALSE, quote = FALSE, sep = ",")
+    
+    name <- paste0("./probability_table/", filename, ".csv")
+    write.table(submission_df, name, row.names = FALSE, quote = FALSE, sep = ",")
     return(list(df = submission_df, file = submission_file))
 }
