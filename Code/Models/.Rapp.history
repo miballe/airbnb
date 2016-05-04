@@ -1,0 +1,2 @@
+load("/Users/nicolavitale/Desktop/DataMining-COMP6237/GroupProject/GIT/airbnb/Code/Models/BASIC_1.RDS")
+load("/Users/nicolavitale/Desktop/DataMining-COMP6237/GroupProject/GIT/airbnb/Code/Models/xgb_model_eg_1.RDS")
