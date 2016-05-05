@@ -6,3 +6,4 @@ exploration_cache/*
 .Rproj.user
 MeetingAudio/
 Data/
+.DS_Store
