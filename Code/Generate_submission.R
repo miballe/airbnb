@@ -11,6 +11,8 @@ submission <- function(model, sparse_test, id, filename){
     rownames(predictions_test) <- levels
     predictions_test <- t(predictions_test)
     
+    print(head(predictions_test))
+    
     top5 <- apply(predictions_test, 1, function(x) {
         head(names(sort(x, decreasing = T)),5)
     })
@@ -27,6 +29,6 @@ submission <- function(model, sparse_test, id, filename){
     write.table(submission_file, name, row.names = FALSE, quote = FALSE, sep = ",")
     
     name <- paste0("./probability_table/", filename, ".csv")
-    write.table(submission_df, name, row.names = FALSE, quote = FALSE, sep = ",")
+    write.table(predictions_test, name, row.names = FALSE, quote = FALSE, sep = ",")
     return(list(df = submission_df, file = submission_file))
 }
