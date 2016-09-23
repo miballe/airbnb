@@ -56,7 +56,7 @@ compare_plot <- function(feature = NA, df = train_users_2, output = "abroad", se
 
     else stop("You must use output == 'abroad' to use the seperate = T argument")
     if (plot == TRUE) print(gg)
-    return(Counts)
+    return(list(Counts,gg))
 }
 
 
@@ -81,7 +81,7 @@ featureFactorComp <- function(df = train_users_2) {
     # Apply compare function on each factor variable
     sapply(factors, function(x) {
         Counts <- compare_plot(feature = x, df = df, output = output, 
-                               seperate = T, plot = F) %>%
+                               seperate = T, plot = F)[[1]] %>%
             group_by() %>%
             mutate(NDF_rate_relative = NDF_rate - mean(NDF_rate, na.rm = T), 
                    US_rate_relative = US_rate - mean(US_rate, na.rm = T))

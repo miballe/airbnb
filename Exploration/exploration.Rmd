@@ -13,15 +13,24 @@ require(tidyr)
 
 I have created a script to read in all the data files as well as a script which takes 2 features and compares the rate of feature "output" grouped by feature "feature". Read in depth the source file for this function in "plotFeatureVsOutput.R". 
 ```{r readinData, echo = FALSE, cache = TRUE, message=FALSE}
+setwd("~/Southampton/Term2/DataMining/GroupCoursework/Exploration")
 source("readIn.R")
 source("plotFeatureVsOutput.R")
+```
+
+```{r set theme settings for plots, echo = FALSE, cache = TRUE, message=FALSE}
+theme <- theme_tufte(base_size = 15)
 ```
 
 ## Basic breakdown of destination popularity
 Below we break down the percentage of the training set going to each outcome factor. Each bar is labelled with its percentage of the total. 
 
 ```{r, results='hold'}
-invisible(compare_plot(output = "country_destination"))
+out <- compare_plot(output = "country_destination")
+gg1 <- out[[2]]
+png(filename = "../Plots/Destination_Counts.png", width = 750, height = 450)
+gg1 + theme + ylab("Number of Observations")
+dev.off()
 ```
 
 NDF (no destination found), and US are by far the largest. It may therefore be important to try to accurately predict the three clusters of no destination (didn't make a booking), internal travel (US) and external travel. 
@@ -90,9 +99,22 @@ groupCounts <- languageDiff %>%
 
 languageDiff <- inner_join(languageDiff, groupCounts)
 
+png("../Plots/Lanuage.png", width = 750, height = 600)
 ggplot(data = languageDiff, aes(x = language, y = percent, colour = abroad)) + 
     geom_point() +
-    geom_hline(aes(yintercept = average, colour = abroad), size=.5, alpha = .5)
+    #geom_hline(aes(yintercept = average, colour = abroad), size=.5, alpha = .5) +
+    geom_hline(yintercept = t[[1,2]], linetype = "dashed", colour = few_pal()(3)[1]) +
+    geom_hline(yintercept = t[[2,2]], linetype = "dashed", colour = few_pal()(3)[2]) +
+    geom_hline(yintercept = t[[3,2]], linetype = "dashed", colour = few_pal()(3)[3]) +
+    ylab("Pecentage of observations") +
+    theme +
+    theme_few() +
+    theme(panel.grid.major = element_line(colour = "blue")) +
+    scale_colour_few() +
+    theme() +
+    theme(legend.title=element_blank())
+
+dev.off()
 ```
 
 Here we can see that while english speakers have a greater than average proportion of users traveling to the US this is due to a lower rate of NDF and not from less people travelling abroad. It is probably more informative to look at these two ratios (Booking/NDF and US/EXT) seperately. 
@@ -106,17 +128,33 @@ Below we can see each categorical feature factors NDF rate compared to the avera
 ```{r full feature comparison, fig.width=900}
 Factor_summary <- featureFactorComp()
 Factor_summary$feature_value <- as.character(Factor_summary$feature_value)
-ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
+
+png("../Plots/Features.png", width = 1000, height = 750)
+gg3 <- ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
                  y = NDF_rate_relative, fill = feature)) + 
     geom_bar(stat = 'identity') +
     theme(axis.text.x = element_text(angle = 90)) +
-    theme_bw()
+    theme_few() +
+    coord_flip() +
+    xlab("Feature") +
+    ylab("Relative NDF rate") +
+    theme(legend.position = "none")
 
-ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
+
+gg4 <- ggplot(Factor_summary, aes(x = reorder(feature_value, as.numeric(feature)), 
                  y = US_rate_relative, fill = feature)) + 
     geom_bar(stat = 'identity') +
     theme(axis.text.x = element_text(angle = 90)) +
-    theme_bw()
+    theme_few() +
+    coord_flip() +
+    xlab("Feature") +
+    ylab("Relative US rate") +
+    theme(legend.title=element_blank()) +
+    theme(legend.position=c(.25, .15)) +
+    theme(legend.background = element_blank())
+
+gridExtra::grid.arrange(gg3, gg4, ncol = 2)
+dev.off()
 ```
 
 Overall it seems that many of the features have some relationship with the NDF rate. Especially levels of not filling in the profile and foreign language use. However identifying strong features related to if travel is internal or external is much harder from the variables we have investigated so far. Although perhaps strangely using a smartphone appears to be correlated with internal travel.
